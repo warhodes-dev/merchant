@@ -40,23 +40,23 @@ impl WorldApp {
             width: size.0,
             height: size.1,
         };
-        world.generate();
+        let _ = world.generate();
         world
     }
 
     pub fn generate(&mut self) -> Result<()> {
         let noise = PerlinNoise::new();
 
-        let noisemap = Box::new(
-            NoiseMap::new(noise)
-                .set(Seed::of(self.seed))
-                .set(Step::of(0.05, 0.05))
-        );
+        let noisemap = Box::new(NoiseMap::new(noise)
+            .set(Seed::of(self.seed))
+            .set(Step::of(0.03, 0.03)));
 
         let world = World::new()
             .set(Size::of(self.width as i64, self.height as i64))
+            .add(Tile::new('\\').when(constraint!(noisemap.clone(), < -0.4)))
             .add(Tile::new('~').when(constraint!(noisemap.clone(), < 0.0)))
-            .add(Tile::new(',').when(constraint!(noisemap.clone(), < 0.45)))
+            //.add(Tile::new('.').when(constraint!(noisemap.clone(), < 0.15)))
+            .add(Tile::new(',').when(constraint!(noisemap.clone(), < 0.6)))
             .add(Tile::new('^').when(constraint!(noisemap.clone(), > 0.8)))
             .add(Tile::new('n'));
 
@@ -84,10 +84,12 @@ impl WorldApp {
 
 fn style_map(c: char) -> TileStyle {
     match c {
-        '~' => TileStyle{glyph: '~', fg: (1, 1, 1), bg: (0, 0, 255)},
-        ',' => TileStyle{glyph: ',', fg: (0, 0, 0), bg: (0, 255, 0)},
+        '~' => TileStyle{glyph: '~', fg: (100, 100, 100), bg: (60, 100, 200)},
+        ',' => TileStyle{glyph: ',', fg: (0, 0, 0), bg: (20, 150, 20)},
         '^' => TileStyle{glyph: '^', fg: (0, 0, 0), bg: (100, 100, 100)},
         'n' => TileStyle{glyph: 'n', fg: (0, 0, 0), bg: (99, 66, 33)},
+        '.' => TileStyle{glyph: '.', fg: (0, 0, 0), bg: (242,210,169)},
+        '\\' => TileStyle{glyph: '\\', fg: (20, 20, 20), bg: (20, 20, 140)},
         _ => panic!("Unsupported tile character")
     }
 }

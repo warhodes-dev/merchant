@@ -9,6 +9,8 @@ edition = "2021"
 anyhow = "1.0.71"
 colored = "2.0.1"
 cursive_buffered_backend = "0.6.1"
+rand = "0.8.5"
+rand_distr = "0.4.3"
 #ratatui = "0.21.0"
 worldgen = "0.5.3"
 

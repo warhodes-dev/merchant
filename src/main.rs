@@ -1,3 +1,5 @@
+use std::time::SystemTime;
+
 use anyhow::Result;
 use cursive::{Cursive, reexports::log, views::Canvas, Printer, event::{Event, EventResult}, view::Resizable, theme::{ColorStyle, Color}};
 
@@ -18,16 +20,24 @@ fn main() -> Result<()> {
     siv.add_global_callback('q', |s| s.quit());
     siv.add_global_callback('`', Cursive::toggle_debug_console);
 
-    let worldapp = WorldApp::new((80, 40), 0);
+    let seed = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)?
+        .as_secs() as u32; // Will fail after 19 January 2038
+
+    let worldapp = WorldApp::new((180, 100), seed);
     let canvas = Canvas::new(worldapp.clone())
         .with_draw(draw)
         .with_on_event(|worldapp: &mut WorldApp, event| match event {
             Event::Char('a') => {
                 EventResult::consumed()
             }
+            Event::Char('r') => {
+                let _ = worldapp.generate();
+                EventResult::consumed()
+            }
             _ => EventResult::Ignored
         })
-        .fixed_size((worldapp.width, worldapp.height));
+        .fixed_size((worldapp.width, worldapp.height / 2));
 
     siv.add_layer(canvas);
 
@@ -40,19 +50,28 @@ fn draw(worldapp: &WorldApp, p: &Printer) {
     let canvas_width = p.size.x;
     let canvas_height = p.size.y;
 
-    for x in 0..worldapp.width {
-        for y in 0..worldapp.height {
-            let tile = worldapp.get_tile(x, y);
-            let x1 = x as u8;
-            let y1 = y as u8;
+    for x in 0..canvas_width {
+        for y in 0..canvas_height {
+            let top = worldapp.get_tile(x, y*2);
+            let bot = worldapp.get_tile(x, y*2+1);
             let style = ColorStyle::new(
-                Color::Rgb(y1, x1, y1), // Why does this not work?
-                Color::Rgb(x1, y1, x1)
+                noisify(top.bg_rgb()),
+                noisify(bot.bg_rgb()),
             );
             p.with_color(style, |printer| {
-                let mut buf = [0u8; 4];
-                printer.print( (x, y), tile.glyph().encode_utf8(&mut buf));
+                printer.print( (x, y), "▀");
             })
         }
     }
+}
+
+fn noisify(color: Color) -> Color {
+    use rand_distr::{Normal, Distribution};
+    let norm = Normal::new(0.0, 2.0).unwrap();
+    let v = norm.sample(&mut rand::thread_rng()) as u8;
+    let Color::Rgb(r, g, b) = color else {
+        panic!("noisify only takes Color::Rgb")
+    };
+    Color::Rgb(r.saturating_sub(v), g.saturating_sub(v), b.saturating_sub(v))
+
 }
