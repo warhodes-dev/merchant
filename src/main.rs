@@ -24,7 +24,7 @@ fn main() -> Result<()> {
         .duration_since(SystemTime::UNIX_EPOCH)?
         .as_secs() as u32; // Will fail after 19 January 2038
 
-    let worldapp = WorldApp::new((180, 100), seed);
+    let worldapp = WorldApp::new((180, 50), seed);
     let canvas = Canvas::new(worldapp.clone())
         .with_draw(draw)
         .with_on_event(|worldapp: &mut WorldApp, event| match event {
@@ -37,7 +37,7 @@ fn main() -> Result<()> {
             }
             _ => EventResult::Ignored
         })
-        .fixed_size((worldapp.width, worldapp.height / 2));
+        .fixed_size((worldapp.width, worldapp.height));
 
     siv.add_layer(canvas);
 
@@ -52,14 +52,10 @@ fn draw(worldapp: &WorldApp, p: &Printer) {
 
     for x in 0..canvas_width {
         for y in 0..canvas_height {
-            let top = worldapp.get_tile(x, y*2);
-            let bot = worldapp.get_tile(x, y*2+1);
-            let style = ColorStyle::new(
-                noisify(top.bg_rgb()),
-                noisify(bot.bg_rgb()),
-            );
+            let tile = worldapp.get_tile(x, y);
+            let style = ColorStyle::new(tile.bg_rgb(), tile.fg_rgb());
             p.with_color(style, |printer| {
-                printer.print( (x, y), "▀");
+                printer.print( (x, y), &tile.glyph().to_string());
             })
         }
     }
